@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Multi-Room Chat</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    #chat { height: 300px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; }
+    #userList { margin-bottom: 10px; }
+  </style>
+</head>
+<body>
+
+  <h2>Multi-Room Chat</h2>
+
+  <input id="nickname" placeholder="Enter nickname" />
+  <input id="room" placeholder="Enter room name" />
+  <button id="joinBtn">Join Room</button>
+
+  <h4>Users in Room:</h4>
+  <ul id="userList"></ul>
+
+  <div id="chat"></div>
+
+  <input id="msgInput" placeholder="Enter message" />
+  <button id="sendBtn">Send</button>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    let nickname = '';
+    let room = '';
+
+    document.getElementById('joinBtn').onclick = () => {
+      nickname = document.getElementById('nickname').value.trim();
+      room = document.getElementById('room').value.trim();
+
+      if (!nickname || !room) {
+        alert("Please enter both nickname and room name.");
+        return;
+      }
+
+      socket.emit('joinRoom', { nickname, room });
+      document.getElementById('chat').innerHTML += `<div><em>Joined room: ${room}</em></div>`;
+    };
+
+    document.getElementById('sendBtn').onclick = () => {
+      const msg = document.getElementById('msgInput').value.trim();
+      if (msg) {
+        socket.emit('chatMessage', msg);
+        document.getElementById('msgInput').value = '';
+      }
+    };
+
+    socket.on('chatMessage', ({ nickname, message, timestamp }) => {
+      document.getElementById('chat').innerHTML += 
+        `<div><strong>${nickname}</strong> <em>[${timestamp}]</em>: ${message}</div>`;
+    });
+
+    socket.on('systemMessage', (msg) => {
+      document.getElementById('chat').innerHTML += `<div><em>${msg}</em></div>`;
+    });
+
+    socket.on('userList', (userArray) => {
+      const userList = document.getElementById('userList');
+      userList.innerHTML = '';
+      userArray.forEach(name => {
+        const li = document.createElement('li');
+        li.textContent = name;
+        userList.appendChild(li);
+      });
+    });
+  </script>
+
+</body>
+</html>
